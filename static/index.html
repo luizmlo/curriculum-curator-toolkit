@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<!--
+================================================================================
+KIT DO PROFESSOR CURADOR - Interface HTML Principal
+================================================================================
+
+ESTRUTURA:
+- Seção de Configuração: Input de tópico e seleção de workflow
+- Seção de Fontes: Lista de fontes de pesquisa encontradas
+- Seção de Currículo: Editor interativo com dois blocos de habilidades
+- Modais: Edição de cards, histórico de sessões, method cards, chatbot
+
+FLUXO DE USUÁRIO:
+1. Usuário digita tópico → Escolhe workflow (manual/pesquisar/gerar)
+2. Se pesquisar → Vê fontes → Seleciona → Gera currículo
+3. Se gerar direto → Currículo gerado com IA
+4. Se manual → Adiciona cards manualmente
+5. Edita/reordena cards → Gera prompts para ferramentas
+6. Salva/carrega sessões → Persistência no LocalStorage
+
+DEPENDÊNCIAS:
+- styles.css: Estilos visuais
+- script.js: Toda a lógica JavaScript
+- Backend FastAPI: API REST para processamento com IA
+================================================================================
+-->
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kit do Professor Curador</title>
+    <link rel="stylesheet" href="/static/styles.css?v=3.0">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div>
+                    <h1>🎓 ToolKit do Professor Curador</h1>
+                    <p class="subtitle">Assistente de Planejamento Curricular com IA</p>
+                </div>
+                <div>
+                    <button id="save-session-btn" class="btn btn-secondary" onclick="saveCurrentSession()" style="display: none;">💾 Salvar Sessão</button>
+                    <button id="sessions-history-btn" class="btn btn-secondary" onclick="openSessionsModal()">📚 Histórico</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Seção de Entrada do Tópico -->
+        <section class="section" id="topic-section">
+            <h2>1. Configurar Currículo</h2>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #333;">Tópico do Currículo:</label>
+                <input type="text" id="topic-input" placeholder="ex.: Mecânica dos Fluidos, Introdução a Cibersegurança, Quimica Organica..." class="topic-input" style="width: 100%;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #333;">Como deseja proceder?</label>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <label class="workflow-option">
+                        <input type="radio" name="workflow-mode" value="manual" checked onchange="updateWorkflowMode()">
+                        <span class="workflow-option-text"><strong>Criar Manualmente</strong><br><small>Adicionar habilidades manualmente</small></span>
+                    </label>
+                    <label class="workflow-option">
+                        <input type="radio" name="workflow-mode" value="direct" onchange="updateWorkflowMode()">
+                        <span class="workflow-option-text"><strong>Gerar Currículo Diretamente</strong><br><small>Sem pesquisar fontes primeiro</small></span>
+                    </label>
+                    <label class="workflow-option">
+                        <input type="radio" name="workflow-mode" value="research" onchange="updateWorkflowMode()">
+                        <span class="workflow-option-text"><strong>Pesquisar Fontes Primeiro</strong><br><small>Encontrar fontes antes de gerar</small></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="workflow-actions">
+                <button id="manual-create-btn" class="btn btn-primary">Criar Currículo Manualmente</button>
+                <button id="direct-generate-btn" class="btn btn-primary" style="display: none;">Gerar Currículo</button>
+                <button id="research-btn" class="btn btn-primary" style="display: none;">Pesquisar Fontes</button>
+            </div>
+            
+            <div id="loading-indicator" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <span id="loading-text">Processando...</span>
+            </div>
+        </section>
+
+        <!-- Seção de Fontes de Pesquisa -->
+        <section class="section" id="sources-section" style="display: none;">
+            <h2>2. Fontes de Pesquisa</h2>
+            <div class="sources-actions" style="margin-bottom: 20px;">
+                <button id="skip-sources-btn" class="btn btn-secondary">Pular e Gerar Currículo Diretamente</button>
+                <button id="delete-selected-btn" class="btn btn-danger" style="display: none;" onclick="deleteSelectedSources()">Remover Selecionadas</button>
+            </div>
+            <p class="instruction" style="margin-bottom: 15px;">Clique nas fontes para selecioná-las. As fontes selecionadas serão usadas na geração do currículo.</p>
+            <div id="sources-list" class="sources-grid"></div>
+            <button id="generate-curriculum-btn" class="btn btn-primary" style="margin-top: 20px;">Gerar Currículo com Fontes Selecionadas</button>
+        </section>
+
+        <!-- Seção de Editor de Currículo -->
+        <section class="section" id="curriculum-section" style="display: none;">
+            <h2>Currículo de Habilidades</h2>
+            <p class="instruction">Arraste os cartões para reordenar, clique para editar ou use os botões para adicionar/remover habilidades. Cada item representa uma habilidade progressiva que se constrói sobre as anteriores. Você pode adicionar habilidades manualmente ou gerar com IA depois.</p>
+            
+            <div class="blocks-container">
+                <!-- Bloco 1 -->
+                <div class="block-wrapper">
+                    <div class="block-header">
+                        <h3>Bloco 1: Fundamentos</h3>
+                        <button class="btn btn-small btn-add" onclick="addCard('block1')">+ Adicionar Habilidade</button>
+                    </div>
+                    <div id="block1" class="card-container" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+
+                <!-- Bloco 2 -->
+                <div class="block-wrapper">
+                    <div class="block-header">
+                        <h3>Bloco 2: Aplicações Práticas</h3>
+                        <button class="btn btn-small btn-add" onclick="addCard('block2')">+ Adicionar Habilidade</button>
+                    </div>
+                    <div id="block2" class="card-container" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-top: 30px; flex-wrap: wrap;">
+                <p class="instruction" style="flex: 1; min-width: 100%; margin-bottom: 10px; padding: 15px; background: #f0f4ff; border-radius: 8px; border-left: 4px solid #667eea;">
+                    💡 <strong>Como usar:</strong> Clique no botão <strong>"📋 Prompts"</strong> em cada habilidade do currículo para criar prompts personalizados para diferentes ferramentas de ensino (vídeo, guia teórico, podcast, visualização interativa e quiz).
+                </p>
+                <button id="save-session-curriculum-btn" class="btn btn-secondary" onclick="saveCurrentSession()">💾 Salvar Sessão</button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modal de Edição de Cartão -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <div class="edit-modal-header">
+                <h3>Editar Habilidade</h3>
+            </div>
+            <div class="edit-modal-body">
+                <div class="form-group">
+                    <label>Título da Habilidade:</label>
+                    <input type="text" id="edit-title" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label>Descrição:</label>
+                    <textarea id="edit-description" class="form-textarea"></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveCardEdit()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Histórico de Sessões -->
+    <div id="sessions-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSessionsModal()">&times;</span>
+            <div class="edit-modal-header">
+                <h3>📚 Histórico de Sessões</h3>
+            </div>
+            <div class="edit-modal-body">
+                <div id="sessions-list">
+                    <!-- Sessões serão listadas aqui -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeSessionsModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Salvar Sessão -->
+    <div id="save-session-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSaveSessionModal()">&times;</span>
+            <div class="edit-modal-header">
+                <h3>💾 Salvar Sessão</h3>
+            </div>
+            <div class="edit-modal-body">
+                <div class="form-group">
+                    <label>Nome da Sessão:</label>
+                    <input type="text" id="session-name-input" class="form-input" placeholder="ex.: Mecânica dos Fluidos - 2024">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeSaveSessionModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="confirmSaveSession()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Method Cards -->
+    <div id="method-cards-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeMethodCardsModal()">&times;</span>
+            <div class="modal-header-section">
+                <h3 id="method-cards-modal-title">📋 Gerar Prompts Personalizados</h3>
+                <p class="instruction" id="method-cards-modal-description"></p>
+                <p class="instruction modal-tip">
+                    💡 <strong>Experiência Curated:</strong> Gere prompts individualmente para cada ferramenta conforme sua necessidade. Cada prompt é personalizado para esta habilidade específica, usando o contexto do curso e habilidades pré-requisitas.
+                </p>
+            </div>
+            
+            <div class="modal-scrollable-content">
+                <div class="method-cards-container">
+                    <!-- Method Card 1: Video -->
+                    <div class="method-card" data-type="video">
+                        <div class="method-card-header">
+                            <h4>🎥 Vídeo Educativo</h4>
+                            <a href="https://invideo.io/" target="_blank" rel="noopener noreferrer" class="method-card-tool">inVideo AI</a>
+                        </div>
+                        <p class="method-card-description">Gera prompt para criar vídeo educativo de 60-90 segundos</p>
+                        <div class="method-card-actions">
+                            <button class="btn btn-small btn-primary" onclick="generateMethodCardPrompt('video')">Gerar</button>
+                            <button class="btn btn-small btn-secondary" onclick="editMethodCardPrompt('video')" style="display: none;" id="edit-video-btn">Editar</button>
+                        </div>
+                        <div class="method-card-result" id="result-video" style="display: none;">
+                            <textarea class="method-card-prompt-textarea" id="prompt-video" readonly></textarea>
+                            <button class="btn btn-small" onclick="copyMethodCardPrompt('video')">Copiar</button>
+                        </div>
+                    </div>
+
+                    <!-- Method Card 2: Theory -->
+                    <div class="method-card" data-type="theory">
+                        <div class="method-card-header">
+                            <h4>📚 Guia Teórico</h4>
+                            <a href="https://notebooklm.google.com/" target="_blank" rel="noopener noreferrer" class="method-card-tool">NotebookLM</a>
+                        </div>
+                        <p class="method-card-description">Gera prompt para criar guia de estudo analítico</p>
+                        <div class="method-card-actions">
+                            <button class="btn btn-small btn-primary" onclick="generateMethodCardPrompt('theory')">Gerar</button>
+                            <button class="btn btn-small btn-secondary" onclick="editMethodCardPrompt('theory')" style="display: none;" id="edit-theory-btn">Editar</button>
+                        </div>
+                        <div class="method-card-result" id="result-theory" style="display: none;">
+                            <textarea class="method-card-prompt-textarea" id="prompt-theory" readonly></textarea>
+                            <button class="btn btn-small" onclick="copyMethodCardPrompt('theory')">Copiar</button>
+                        </div>
+                    </div>
+
+                    <!-- Method Card 3: Case Study -->
+                    <div class="method-card" data-type="case_study">
+                        <div class="method-card-header">
+                            <h4>🎙️ Estudo de Caso (Podcast)</h4>
+                            <a href="https://elevenlabs.io/" target="_blank" rel="noopener noreferrer" class="method-card-tool">ElevenLabs</a>
+                        </div>
+                        <p class="method-card-description">Gera roteiro de podcast estilo true crime educativo</p>
+                        <div class="method-card-actions">
+                            <button class="btn btn-small btn-primary" onclick="generateMethodCardPrompt('case_study')">Gerar</button>
+                            <button class="btn btn-small btn-secondary" onclick="editMethodCardPrompt('case_study')" style="display: none;" id="edit-case_study-btn">Editar</button>
+                        </div>
+                        <div class="method-card-result" id="result-case_study" style="display: none;">
+                            <textarea class="method-card-prompt-textarea" id="prompt-case_study" readonly></textarea>
+                            <button class="btn btn-small" onclick="copyMethodCardPrompt('case_study')">Copiar</button>
+                        </div>
+                    </div>
+
+                    <!-- Method Card 4: Practice -->
+                    <div class="method-card" data-type="practice">
+                        <div class="method-card-header">
+                            <h4>🔬 Visualização Interativa</h4>
+                            <a href="https://colab.research.google.com/" target="_blank" rel="noopener noreferrer" class="method-card-tool">Google Colab</a>
+                        </div>
+                        <p class="method-card-description">Gera código Python para laboratório virtual interativo</p>
+                        <div class="method-card-actions">
+                            <button class="btn btn-small btn-primary" onclick="generateMethodCardPrompt('practice')">Gerar</button>
+                            <button class="btn btn-small btn-secondary" onclick="editMethodCardPrompt('practice')" style="display: none;" id="edit-practice-btn">Editar</button>
+                        </div>
+                        <div class="method-card-result" id="result-practice" style="display: none;">
+                            <textarea class="method-card-prompt-textarea" id="prompt-practice" readonly></textarea>
+                            <button class="btn btn-small" onclick="copyMethodCardPrompt('practice')">Copiar</button>
+                        </div>
+                    </div>
+
+                    <!-- Method Card 5: Quiz -->
+                    <div class="method-card" data-type="quiz">
+                        <div class="method-card-header">
+                            <h4>📝 Quiz de Diagnóstico</h4>
+                            <a href="https://forms.google.com/" target="_blank" rel="noopener noreferrer" class="method-card-tool">Google Forms</a>
+                        </div>
+                        <p class="method-card-description">Gera questões de múltipla escolha, com gabarito e explicações</p>
+                        <div class="method-card-actions">
+                            <button class="btn btn-small btn-primary" onclick="generateMethodCardPrompt('quiz')">Gerar</button>
+                            <button class="btn btn-small btn-secondary" onclick="editMethodCardPrompt('quiz')" style="display: none;" id="edit-quiz-btn">Editar</button>
+                        </div>
+                        <div class="method-card-result" id="result-quiz" style="display: none;">
+                            <textarea class="method-card-prompt-textarea" id="prompt-quiz" readonly></textarea>
+                            <button class="btn btn-small" onclick="copyMethodCardPrompt('quiz')">Copiar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeMethodCardsModal()">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Chatbot Button -->
+    <button id="chatbot-floating-btn" class="chatbot-floating-btn" onclick="toggleChatbot()" title="Assistente de Currículo">
+        💬
+    </button>
+
+    <!-- Chatbot Modal -->
+    <div id="chatbot-modal" class="modal">
+        <div class="modal-content chatbot-modal-content">
+            <span class="close" onclick="toggleChatbot()">&times;</span>
+            <div class="modal-header-section">
+                <h3>💬 Assistente de Currículo</h3>
+                <p class="instruction">Peça para adicionar, editar, remover ou reordenar habilidades do currículo usando linguagem natural.</p>
+            </div>
+            <div class="modal-scrollable-content chatbot-messages-container">
+                <div id="chatbot-messages" class="chatbot-messages"></div>
+            </div>
+            <div class="chatbot-input-container">
+                <input type="text" id="chatbot-input" class="chatbot-input" placeholder="Digite seu comando... (ex: Adicione um card sobre Python no bloco 1)" onkeypress="handleChatbotKeyPress(event)">
+                <button id="chatbot-send-btn" class="btn btn-primary btn-small" onclick="sendChatbotMessage()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js?v=2.0"></script>
+</body>
+</html>
