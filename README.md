@@ -63,7 +63,7 @@
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/luizMlo/toolkit-professor-curador.git
+git clone https://github.com/luizMlo/curriculum-curator-toolkit.git
 cd toolkit-professor-curador
 pip install -r requirements.txt
 ```
