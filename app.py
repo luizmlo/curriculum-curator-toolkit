@@ -46,7 +46,7 @@ load_dotenv()
 # INICIALIZAÇÃO DA APLICAÇÃO
 # ============================================================================
 
-app = FastAPI(title="ToolKit do Professor Curador")
+app = FastAPI(title="Curriculum Curator Toolkit")
 
 # Inicializar cliente Gemini
 # IMPORTANTE: A chave da API deve estar no arquivo .env como GEMINI_API_KEY
@@ -61,8 +61,6 @@ else:
 # Servir arquivos estáticos (HTML, CSS, JavaScript)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Modelo Gemini a ser usado para a maioria das operações
-# Para operações mais complexas (como código Python), usa-se gemini-3-pro-preview
 GEMINI_MODEL = "gemini-2.5-flash"
 
 
@@ -684,8 +682,7 @@ REGRAS CRÍTICAS DE FORMATAÇÃO:
         raise ValueError(f"Tipo de method card inválido: {method_card_type}")
     
     try:
-        model = "gemini-3-pro-preview" if method_card_type == "practice" else "gemini-2.5-flash"
-        content = await asyncio.to_thread(call_gemini, system_prompt, user_prompt, model)
+        content = await asyncio.to_thread(call_gemini, system_prompt, user_prompt, GEMINI_MODEL)
         return content.strip()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar prompt do method card {method_card_type}: {str(e)}")

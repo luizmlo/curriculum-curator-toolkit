@@ -1,29 +1,4 @@
 <!DOCTYPE html>
-<!--
-================================================================================
-KIT DO PROFESSOR CURADOR - Interface HTML Principal
-================================================================================
-
-ESTRUTURA:
-- Seção de Configuração: Input de tópico e seleção de workflow
-- Seção de Fontes: Lista de fontes de pesquisa encontradas
-- Seção de Currículo: Editor interativo com dois blocos de habilidades
-- Modais: Edição de cards, histórico de sessões, method cards, chatbot
-
-FLUXO DE USUÁRIO:
-1. Usuário digita tópico → Escolhe workflow (manual/pesquisar/gerar)
-2. Se pesquisar → Vê fontes → Seleciona → Gera currículo
-3. Se gerar direto → Currículo gerado com IA
-4. Se manual → Adiciona cards manualmente
-5. Edita/reordena cards → Gera prompts para ferramentas
-6. Salva/carrega sessões → Persistência no LocalStorage
-
-DEPENDÊNCIAS:
-- styles.css: Estilos visuais
-- script.js: Toda a lógica JavaScript
-- Backend FastAPI: API REST para processamento com IA
-================================================================================
--->
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -36,7 +11,7 @@ DEPENDÊNCIAS:
         <header>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <div>
-                    <h1>🎓 ToolKit do Professor Curador</h1>
+                    <h1>🎓 Curriculum Curator Toolkit</h1>
                     <p class="subtitle">Assistente de Planejamento Curricular com IA</p>
                 </div>
                 <div>

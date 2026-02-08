@@ -1,7 +1,4 @@
-// ============================================================================
-// KIT DO PROFESSOR CURADOR - Frontend JavaScript
-// Versão: 2.0 - Method Cards Implementados
-// ============================================================================
+// Curriculum Curator Toolkit - Frontend
 
 // ============================================================================
 // ESTADO GLOBAL
@@ -1293,20 +1290,21 @@ function editMethodCardPrompt(methodCardType) {
     }
 }
 
-function copyMethodCardPrompt(methodCardType) {
+async function copyMethodCardPrompt(methodCardType) {
     const textarea = document.getElementById(`prompt-${methodCardType}`);
     if (!textarea) return;
-    
-    textarea.select();
-    document.execCommand('copy');
-    
-    const btn = event ? event.target : null;
-    if (btn) {
-        const originalText = btn.textContent;
-        btn.textContent = 'Copiado!';
-        setTimeout(() => {
-            btn.textContent = originalText;
-        }, 1000);
+
+    try {
+        await navigator.clipboard.writeText(textarea.value);
+        const btn = event?.target;
+        if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = 'Copiado!';
+            setTimeout(() => { btn.textContent = originalText; }, 1000);
+        }
+    } catch {
+        textarea.select();
+        document.execCommand('copy');
     }
 }
 

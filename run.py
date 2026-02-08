@@ -1,26 +1,12 @@
 #!/usr/bin/env python3
-"""
-================================================================================
-KIT DO PROFESSOR CURADOR - Script de Inicialização
-================================================================================
-
-Este script inicia o servidor de desenvolvimento com reload automático.
-Útil para desenvolvimento, pois recarrega automaticamente quando arquivos mudam.
-
-USO:
-    python run.py
-
-O servidor estará disponível em http://localhost:8000
-
-Para produção, use: uvicorn app:app --host 0.0.0.0 --port 8000
-"""
+"""Dev server with auto-reload. Run: python run.py"""
 
 import uvicorn
 
 if __name__ == "__main__":
-    print("🎓 Iniciando Kit do Professor Curador...")
-    print("📚 Abra http://localhost:8000 no seu navegador")
-    print("🛑 Pressione Ctrl+C para parar o servidor\n")
+    print("🎓 Curriculum Curator Toolkit")
+    print("📚 http://localhost:8000")
+    print("🛑 Ctrl+C to stop\n")
     
     uvicorn.run(
         "app:app",
